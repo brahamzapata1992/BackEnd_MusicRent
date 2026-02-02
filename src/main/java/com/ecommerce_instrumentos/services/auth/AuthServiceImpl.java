@@ -30,7 +30,7 @@ public class AuthServiceImpl implements AuthService {
         user.setEmail(signupRequest.getEmail());
         user.setName(signupRequest.getName());
         user.setLastName(signupRequest.getLastName());  // Agregamos el campo lastName
-        user.setPassword(new BCryptPasswordEncoder().encode(signupRequest.getPassword()));
+        user.setPassword(bCryptPasswordEncoder.encode(signupRequest.getPassword()));
         user.setRole(UserRole.CUSTOMER);
         User createdUser = userRepository.save(user);
 
@@ -73,7 +73,7 @@ public class AuthServiceImpl implements AuthService {
             user.setName("admin");
             user.setLastName("adminLastName");  // Agregamos el campo lastName
             user.setRole(UserRole.ADMIN);
-            user.setPassword(new BCryptPasswordEncoder().encode("admin"));
+            user.setPassword(bCryptPasswordEncoder.encode("admin"));
             userRepository.save(user);
         }
     }
