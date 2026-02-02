@@ -40,7 +40,7 @@ public class AuthController {
 
     private final JwtUtil jwtUtil;
 
-    public static final String TOKEN_PREFIX = "Bearer";
+    public static final String TOKEN_PREFIX = "Bearer ";
     public static final String HEADER_STRING = "Authorization";
 
     private final AuthService authService;
