@@ -24,9 +24,10 @@ public class SimpleCorsFilter implements Filter {
         Map<String, String> map = new HashMap<>();
         String originHeader = request.getHeader("origin");
         response.setHeader("Access-Control-Allow-Origin", originHeader);
-        response.setHeader("Access-Control-Allow-Methods", "POST, GET, PUT, OPTIONS, DELETE");
-        response.setHeader("Access-Control-Max-Age", "5173");
-        response.setHeader("Access-Control-Allow-Headers", "*");
+        response.setHeader("Access-Control-Allow-Methods", "POST, GET, PUT, PATCH, OPTIONS, DELETE");
+        response.setHeader("Access-Control-Max-Age", "3600");
+        response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, Accept, Origin, X-Requested-With");
+        response.setHeader("Access-Control-Expose-Headers", "Authorization");
 
         if("OPTIONS".equalsIgnoreCase(request.getMethod())){
             response.setStatus(HttpServletResponse.SC_OK);

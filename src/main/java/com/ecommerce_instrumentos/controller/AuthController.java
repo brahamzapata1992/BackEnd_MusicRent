@@ -16,7 +16,7 @@ import org.json.JSONObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -51,8 +51,11 @@ public class AuthController {
         try{
             authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authenticationRequest.getUsername(),
                     authenticationRequest.getPassword()));
-        }catch (BadCredentialsException e ){
-            throw new BadCredentialsException("Incorrect username or password");
+        }catch (AuthenticationException e ){
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write(new JSONObject().put("message", "Incorrect username or password").toString());
+            return;
         }
         final UserDetails userDetails = userDetailsService.loadUserByUsername(authenticationRequest.getUsername());
         Optional<User> optionalUser = userRepository.findFirstByEmail(userDetails.getUsername());
@@ -85,7 +88,13 @@ public class AuthController {
         UserDto userDto = authService.createUser(signupRequest);
 
         // Envía un correo electrónico después de un registro exitoso
-        emailService.sendRegistrationSuccessEmail(signupRequest.getEmail(), signupRequest.getName());
+        // Si el correo falla (SMTP bloqueado o credenciales sin configurar en el servidor),
+        // el usuario igual queda creado y no se devuelve error.
+        try {
+            emailService.sendRegistrationSuccessEmail(signupRequest.getEmail(), signupRequest.getName());
+        } catch (Exception e) {
+            System.err.println("No se pudo enviar el correo de registro a " + signupRequest.getEmail() + ": " + e.getMessage());
+        }
 
         return new ResponseEntity<>(userDto, HttpStatus.OK);
     }

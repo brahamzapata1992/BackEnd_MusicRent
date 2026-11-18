@@ -15,7 +15,6 @@
 	<description>Project for Spring Boot</description>
 	<properties>
 		<java.versión>17</java.versión>
-		<spring-security.version>6.0.0</spring-security.version>
 	</properties>
 	<dependencies>
 		<dependency>

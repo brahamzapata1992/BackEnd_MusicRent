@@ -55,12 +55,15 @@ public class Product {
         productDto.setCategoryId(category.getId());
         productDto.setCategoryName(category.getName());
 
-        List<ProductImageDto> imageDtos = images.stream()
+        // Un producto recién creado no tiene características (features == null):
+        // sin esta protección getDto() lanzaba NullPointerException y la API respondía 500
+        // aunque el producto sí quedaba guardado.
+        List<ProductImageDto> imageDtos = (images == null ? List.<ProductImage>of() : images).stream()
                 .map(image -> new ProductImageDto(image.getImageData()))
                 .collect(Collectors.toList());
 
         productDto.setImages(imageDtos);
-        List<ProductFeatureDto> featureDtos = features.stream()
+        List<ProductFeatureDto> featureDtos = (features == null ? List.<ProductFeature>of() : features).stream()
                 .map(feature ->  new ProductFeatureDto(feature.getId(),feature.getProduct().getId(), feature.getFeature().getId()))
                 .collect(Collectors.toList());
 

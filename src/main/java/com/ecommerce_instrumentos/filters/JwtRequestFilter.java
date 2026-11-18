@@ -28,20 +28,26 @@ public class JwtRequestFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String authHeader = request.getHeader("Authorization");
-        String token = null;
-        String username = null;
 
-        if(authHeader != null && authHeader.startsWith("Bearer")){
-            token = authHeader.substring(7);
-            username = jwtUtil.extractUsername(token);
-        }
-        if(username != null && SecurityContextHolder.getContext().getAuthentication() ==null){
-            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-
-            if(jwtUtil.validateToken(token, userDetails)){
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails, null,userDetails.getAuthorities());
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+        if (authHeader != null && authHeader.startsWith("Bearer")
+                && SecurityContextHolder.getContext().getAuthentication() == null) {
+            // Acepta tanto "Bearer <token>" como "Bearer<token>" (formato que devuelve /users/authenticate)
+            String token = authHeader.substring("Bearer".length()).trim();
+            try {
+                String username = jwtUtil.extractUsername(token);
+                if (username != null) {
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                    if (jwtUtil.validateToken(token, userDetails)) {
+                        UsernamePasswordAuthenticationToken authToken =
+                                new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                        authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        SecurityContextHolder.getContext().setAuthentication(authToken);
+                    }
+                }
+            } catch (Exception e) {
+                // Token inválido, expirado o de un usuario que ya no existe:
+                // se continúa sin autenticar en vez de romper la petición con un 403/500.
+                SecurityContextHolder.clearContext();
             }
         }
 

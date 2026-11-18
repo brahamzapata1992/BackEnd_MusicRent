@@ -17,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 @RestController
@@ -27,13 +28,29 @@ public class AdminProductController {
     private final AdminProductService adminProductService;
     private final FeatureService featureService;
 
+    public static final int MAX_IMAGES = 5;
+
+    private static ResponseEntity<ErrorResponse> error(HttpStatus status, String message) {
+        ErrorResponse body = new ErrorResponse();
+        body.setStatus(status.value());
+        body.setMessage(message);
+        return ResponseEntity.status(status).body(body);
+    }
+
     @PostMapping
-    public ResponseEntity<ProductDto> addProduct(
+    public ResponseEntity<?> addProduct(
             @RequestParam("name") String name,
             @RequestParam("price") Long price,
             @RequestParam("description") String description,
             @RequestParam("categoryId") Long categoryId,
-            @RequestParam("images") List<MultipartFile> images) throws IOException {
+            @RequestParam(value = "images", required = false) List<MultipartFile> images) throws IOException {
+
+        if (images == null || images.isEmpty()) {
+            return error(HttpStatus.BAD_REQUEST, "Agrega al menos una imagen del producto.");
+        }
+        if (images.size() > MAX_IMAGES) {
+            return error(HttpStatus.BAD_REQUEST, "Puedes subir máximo " + MAX_IMAGES + " imágenes por producto.");
+        }
 
         ProductDto productDto = new ProductDto();
         productDto.setName(name);
@@ -63,9 +80,11 @@ public class AdminProductController {
             ProductDto createdProduct = adminProductService.addProduct(productDto);
 
             return ResponseEntity.status(HttpStatus.CREATED).body(createdProduct);
+        } catch (NoSuchElementException e) {
+            return error(HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
-            // Manejo de errores, por ejemplo, log o retorno de un código de error
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+            e.printStackTrace();
+            return error(HttpStatus.INTERNAL_SERVER_ERROR, "No se pudo guardar el producto.");
         }
     }
 
@@ -91,13 +110,17 @@ public class AdminProductController {
     }
 
     @PutMapping(value = "/{productId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ProductDto> updateProduct(
+    public ResponseEntity<?> updateProduct(
             @PathVariable Long productId,
             @RequestParam("name") String name,
             @RequestParam("price") Long price,
             @RequestParam("description") String description,
             @RequestParam("categoryId") Long categoryId,
             @RequestParam(value = "images", required = false) List<MultipartFile> images) throws IOException {
+
+        if (images != null && images.size() > MAX_IMAGES) {
+            return error(HttpStatus.BAD_REQUEST, "Puedes subir máximo " + MAX_IMAGES + " imágenes por producto.");
+        }
 
         ProductDto productDto = new ProductDto();
         productDto.setName(name);
@@ -129,9 +152,11 @@ public class AdminProductController {
             ProductDto updatedProduct = adminProductService.updateProduct(productId, productDto);
 
             return ResponseEntity.ok(updatedProduct);
+        } catch (NoSuchElementException e) {
+            return error(HttpStatus.NOT_FOUND, e.getMessage());
         } catch (Exception e) {
-            // Manejo de errores, por ejemplo, log o retorno de un código de error
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+            e.printStackTrace();
+            return error(HttpStatus.INTERNAL_SERVER_ERROR, "No se pudo actualizar el producto.");
         }
     }
 
